@@ -35,8 +35,11 @@ The server sends the entire state of the game continuously and the clients are o
 This is a simple way to make sure all the clients are exactly on the same page.
 
 ## Exercises
+
 Individually:
 
 *When a player clicks, the mouse pointer changes appearance (in all clients)
+
 *When a player clicks on another mouse pointer the clicked pointer "dies" (it should be resolved on the server side)
+
 *Every 5 seconds all the mouse pointers go back to life (also determined by the server)
