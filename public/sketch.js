@@ -5,6 +5,9 @@
 //create a socket connection
 var socket;
 var pointer;
+var pointerAlter;
+var isAlter;
+var isDead;
 //I send updates at the same rate as the server update
 var UPDATE_TIME = 1000 / 10;
 
@@ -12,6 +15,7 @@ var UPDATE_TIME = 1000 / 10;
 function preload() {
     //load the image and store it in pointer
     pointer = loadImage('assets/pointer.png');
+    pointerAlter = loadImage('assets/pointerAlt.png');
 }
 
 function setup() {
@@ -19,6 +23,9 @@ function setup() {
     createCanvas(800, 600);
     //paint it white
     background(255, 255, 255);
+
+    isAlter = false;
+    isDead = false;
 
     //I create socket but I wait to assign all the functions before opening a connection
     socket = io({
@@ -32,11 +39,13 @@ function setup() {
     //handles the user action broadcast by the server, the parameter is an object
     socket.on('state', updateState);
 
+    socket.on('kill', doIDie);
+
     socket.open();
 
     //every x time I update the server on my position
     setInterval(function () {
-        socket.emit('clientUpdate', { x: mouseX, y: mouseY });
+        socket.emit('clientUpdate', { x: mouseX, y: mouseY, im: isAlter, dead: isDead });
     }, UPDATE_TIME);
 }
 
@@ -58,20 +67,34 @@ function updateState(state) {
             //in this case I don't have to draw the pointer at my own position
             if (playerId != socket.id) {
                 var playerState = state.players[playerId];
-
-                //draw a pointer image for each player except for myself
-                image(pointer, playerState.x, playerState.y);
+                if(!playerState.dead) {
+                    //draw a pointer image for each player except for myself
+                    if(playerState.im) {
+                        image(pointerAlter, playerState.x, playerState.y);
+                    } else {
+                        image(pointer, playerState.x, playerState.y);
+                    }
+                }
             }
         }
     }
 
 }
 
+function doIDie(loc) {
+    if( abs(loc.x - mouseX) < 5 && abs(loc.y - mouseY) < 5 && !isDead ) {
+        isDead = true;
+        setTimeout(function () {
+            isDead = false;
+        }, 5000);
+    }
+}
+
 //connected to the server
 function onConnect() {
     if (socket.id) {
         console.log("Connected to the server");
-        socket.emit('newPlayer', { x: mouseX, y: mouseY });
+        socket.emit('newPlayer', { x: mouseX, y: mouseY, im: isAlter, dead: isDead });
     }
 }
 
@@ -80,4 +103,21 @@ function onMessage(msg) {
     if (socket.id) {
         console.log("Message from server: " + msg);
     }
+}
+
+function mousePressed() {
+    if(!isDead) {
+        if(mouseButton == LEFT) {
+            if (socket.id) {
+                socket.emit('killAttempt', {x: mouseX, y: mouseY});
+            }
+        }
+        if(mouseButton == RIGHT) {
+            if (socket.id) {
+                isAlter = !isAlter;
+            }
+        }
+    }
+    
+    //PANIC AAAAAAH
 }

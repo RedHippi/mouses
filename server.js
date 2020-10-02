@@ -35,11 +35,14 @@ io.on('connection', function (socket) {
     is an object containing the x and y coordinates 
     */
     socket.on('newPlayer', function (obj) {
+        console.log(obj);
 
         //object creation in javascript
         gameState.players[socket.id] = {
             x: 0,
-            y: obj.y
+            y: obj.y,
+            im: obj.im,
+            dead: obj.dead
         }
 
         //gameState.players is an object, not an array or list
@@ -62,8 +65,16 @@ io.on('connection', function (socket) {
 
     //when I receive an update from a client, update the game state
     socket.on('clientUpdate', function (obj) {
-        gameState.players[socket.id].x = obj.x;
-        gameState.players[socket.id].y = obj.y;
+        if(socket.id != null && gameState.players[socket.id] != null) {
+            gameState.players[socket.id].x = obj.x;
+            gameState.players[socket.id].y = obj.y;
+            gameState.players[socket.id].im = obj.im;
+            gameState.players[socket.id].dead = obj.dead;
+        }
+    });
+
+    socket.on('killAttempt', function (obj) {
+        socket.broadcast.emit('kill', obj);
     });
 
     //setInterval calls the function at the given interval in time
